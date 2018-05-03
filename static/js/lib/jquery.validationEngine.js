@@ -136,13 +136,13 @@
 		                var form = element.closest('form, .validationEngineContainer');
 		                options = (form.data('jqv')) ? form.data('jqv') : $.validationEngine.defaults;
 		                valid = methods._validateField(element, options);
-		
+
 		                if (valid && options.onFieldSuccess)
 		                    options.onFieldSuccess();
 		                else if (options.onFieldFailure && options.InvalidFields.length > 0) {
 		                    options.onFieldFailure();
 		                }
-		
+
 		                return !valid;
 			}
 			if(options.onValidationComplete) {
@@ -225,11 +225,11 @@
 		 /**
 		 * Closes all error prompts on the page
 		 */
-		 hideAll: function() {             
+		 hideAll: function() {
 			 var form = this;
 			 var options = form.data('jqv');
 			 var duration = options ? options.fadeDuration:300;
-			 $('.formError').fadeTo(duration, 0, function() {                 
+			 $('.formError').fadeTo(duration, 0, function() {
 				 $(this).closest('.formError').remove();
 			 });
 			 return this;
@@ -1758,7 +1758,7 @@
                     "opacity": 0,
                     "display": "block"
                 });
-                
+
 				if (noAnimation)
 					prompt.css(css);
 				else
