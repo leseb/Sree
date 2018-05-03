@@ -1,0 +1,5 @@
+{
+    "awsEndpoint": "ENDPOINT",
+    "awsAccessKey": "ACCESS_KEY",
+    "awsSecretKey": "SECRET_KEY"
+}
