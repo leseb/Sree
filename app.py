@@ -107,7 +107,7 @@ def putcors():
       <ExposeHeader>ETag</ExposeHeader>
   </CORSRule>
 </CORSConfiguration>'''
-    content_md5 = base64.b64encode(hashlib.md5(cors).digest())
+    content_md5 = base64.b64encode(hashlib.md5(cors.encode()).digest()).decode()
 
     headers = {
         'Content-type':'text/xml',
