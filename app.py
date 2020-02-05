@@ -16,15 +16,18 @@ import hashlib
 
 app = Flask(__name__, static_url_path='')
 
-import urlparse
+try:
+    from urlparse import urlparse, urlunparse
+except ImportError:
+    from urllib.parse import urlparse, urlunparse
 
 
 def get_url_from_req(request):
     url = from_request(request, 'url')
-    parsed = urlparse.urlparse(url)
+    parsed = urlparse(url)
     rgw_civetweb_port = app.config['RGW_CIVETWEB_PORT']
     rgw_address = "127.0.0.1:" + rgw_civetweb_port
-    return urlparse.urlunparse((parsed[0], rgw_address, parsed[2], parsed[3], parsed[4], parsed[5]))
+    return urlunparse((parsed[0], rgw_address, parsed[2], parsed[3], parsed[4], parsed[5]))
 
 
 def from_request(request, k):
