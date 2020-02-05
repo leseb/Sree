@@ -2,14 +2,13 @@
 # encoding=utf-8
 
 import json
-from StringIO import StringIO
 
 from flask import Flask
 from flask import json
 from flask import request
 from flask import send_from_directory
 from flask import Response
-import pycurl
+import requests
 
 import xmlparser
 import base64
@@ -17,15 +16,18 @@ import hashlib
 
 app = Flask(__name__, static_url_path='')
 
-import urlparse
+try:
+    from urlparse import urlparse, urlunparse
+except ImportError:
+    from urllib.parse import urlparse, urlunparse
 
 
 def get_url_from_req(request):
     url = from_request(request, 'url')
-    parsed = urlparse.urlparse(url)
+    parsed = urlparse(url)
     rgw_civetweb_port = app.config['RGW_CIVETWEB_PORT']
     rgw_address = "127.0.0.1:" + rgw_civetweb_port
-    return urlparse.urlunparse((parsed[0], rgw_address, parsed[2], parsed[3], parsed[4], parsed[5]))
+    return urlunparse((parsed[0], rgw_address, parsed[2], parsed[3], parsed[4], parsed[5]))
 
 
 def from_request(request, k):
@@ -35,13 +37,16 @@ def from_request(request, k):
 
 
 def req(url, method):
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, url)
-    c.setopt(pycurl.CUSTOMREQUEST, method)
-    c.perform()
-    statuscode = c.getinfo(c.HTTP_CODE)
-    c.close()
-    return statuscode
+    command = requests.get
+    if method == 'DELETE':
+        command = requests.delete
+    elif method == 'PUT':
+        command = requests.put
+    elif method == 'POST':
+        command = requests.post
+    r = command(url)
+    return r.status_code
+
 
 
 @app.route("/createbucket", methods=['POST'])
@@ -102,18 +107,18 @@ def putcors():
       <ExposeHeader>ETag</ExposeHeader>
   </CORSRule>
 </CORSConfiguration>'''
-    content_md5 = base64.b64encode(hashlib.md5(cors).digest())
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, corsurl)
-    c.setopt(pycurl.HTTPHEADER, ['Content-type: text/xml',
-                                 'Content-MD5: ' + content_md5,
-                                 'Authorization: ' + s3auth,
-                                 'Date: ' + date])
-    c.setopt(pycurl.CUSTOMREQUEST, 'PUT')
-    c.setopt(pycurl.POSTFIELDS, cors)
-    c.perform()
-    statuscode = c.getinfo(c.HTTP_CODE)
-    c.close()
+    content_md5 = base64.b64encode(hashlib.md5(cors.encode()).digest()).decode()
+
+    headers = {
+        'Content-type':'text/xml',
+        'Content-MD5':content_md5,
+        'Authorization':s3auth,
+        'Date' : date
+    }
+
+    r  = requests.put(corsurl, headers=headers, data=cors)
+    statuscode = r.status_code
+
     if statuscode == 200:
         resp = Response(status=statuscode)
     elif statuscode == 403:
@@ -129,15 +134,11 @@ def listbucketsurl():
     s3auth = from_request(request, 's3auth')
     date = from_request(request, 'date')
 
-    storage = StringIO()
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, url)
-    c.setopt(c.WRITEFUNCTION, storage.write)
-    c.setopt(pycurl.HTTPHEADER, ['Authorization: ' + s3auth,
-                                 'x-amz-date: ' + date])
-    c.perform()
-    statuscode = c.getinfo(c.HTTP_CODE)
-    c.close()
+    headers = {'Authorization':s3auth, 'x-amz-date': date}
+
+    r = requests.get(url, headers=headers)
+
+    statuscode = r.status_code
 
     if statuscode != 200:
         if statuscode == 403:
@@ -146,7 +147,8 @@ def listbucketsurl():
             resp = Response(response='Unknown Error', status=500)
         return resp
 
-    content = storage.getvalue()
+    content = r.text
+
     buckets = xmlparser.getListFromXml(content, 'Bucket')
     resp = Response(response=json.dumps(buckets), status=statuscode)
     resp.headers['Content-type'] = 'application/json; charset=UTF-8'
