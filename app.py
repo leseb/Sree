@@ -26,7 +26,7 @@ def get_url_from_req(request):
     url = from_request(request, 'url')
     parsed = urlparse(url)
     rgw_civetweb_port = app.config['RGW_CIVETWEB_PORT']
-    rgw_address = "127.0.0.1:" + rgw_civetweb_port
+    rgw_address = app.config['RGW_ADDRESS'] + ":" + rgw_civetweb_port
     return urlunparse((parsed[0], rgw_address, parsed[2], parsed[3], parsed[4], parsed[5]))
 
 
